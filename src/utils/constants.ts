@@ -1,0 +1,1 @@
+export const STALE_TASK_THRESHOLD_DAYS = 7;
