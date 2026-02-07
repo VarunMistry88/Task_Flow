@@ -7,7 +7,7 @@ import { cn } from '../../utils/cn';
 import { STALE_TASK_THRESHOLD_DAYS } from '../../utils/constants';
 import { TimeLogHistory } from './TimeLogHistory';
 import { TaskEditDialog } from './TaskEditDialog';
-import { TimeProgressRing } from '../ui/TimeProgressRing';
+
 
 interface TaskItemProps {
     task: Task;
@@ -207,27 +207,7 @@ export const TaskItem = ({
                 </div>
             )}
 
-            {/* Time Budget Ring - Only show in list view */}
-            {task.estimatedTime && layout !== 'board' && (
-                <div className="flex items-center gap-2 group/time min-w-[100px] justify-end">
-                    <div className="flex flex-col items-end text-[10px] leading-tight opacity-0 group-hover/time:opacity-100 transition-opacity -mr-1">
-                        <span className={cn(
-                            "font-bold",
-                            task.totalTimeSpent > task.estimatedTime ? "text-red-500" : "text-slate-700 dark:text-slate-300"
-                        )}>
-                            {formatTime(task.totalTimeSpent)}
-                        </span>
-                        <span className="text-slate-400">
-                            / {formatTime(task.estimatedTime)}
-                        </span>
-                    </div>
-                    <TimeProgressRing
-                        used={task.totalTimeSpent}
-                        total={task.estimatedTime}
-                        size={28}
-                    />
-                </div>
-            )}
+
         </div>
     );
 
@@ -236,13 +216,36 @@ export const TaskItem = ({
             "flex items-center gap-4",
             layout === 'board' ? "w-full justify-between pt-3 mt-2 border-t border-slate-100 dark:border-slate-800" : ""
         )}>
-            <div className={cn(
-                "font-mono text-lg",
-                isActive ? "text-slate-200 dark:text-blue-200" : "text-slate-500 dark:text-slate-400",
-                // Hide duplicate time display in list view if estimated time bar is shown
-                (layout === 'list' && task.estimatedTime) ? "hidden" : ""
-            )}>
-                {formatTime(task.totalTimeSpent)}
+            <div className="flex flex-col items-end gap-0.5">
+                <div className={cn(
+                    "font-mono text-lg leading-none",
+                    isActive ? "text-slate-200 dark:text-blue-200" : "text-slate-500 dark:text-slate-400",
+                    task.estimatedTime && task.totalTimeSpent > task.estimatedTime && "text-red-500 dark:text-red-400"
+                )}>
+                    {formatTime(task.totalTimeSpent)}
+                    {task.estimatedTime && layout === 'list' && (
+                        <span className="text-sm opacity-50 ml-1">
+                            / {formatTime(task.estimatedTime)}
+                        </span>
+                    )}
+                </div>
+                {task.estimatedTime && layout === 'list' && (
+                    <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                            className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                task.totalTimeSpent > task.estimatedTime
+                                    ? "bg-red-500"
+                                    : task.totalTimeSpent >= task.estimatedTime * 0.8
+                                        ? "bg-orange-500"
+                                        : "bg-blue-500"
+                            )}
+                            style={{
+                                width: `${Math.min((task.totalTimeSpent / task.estimatedTime) * 100, 100)}%`
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className={cn(

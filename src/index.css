@@ -43,4 +43,14 @@
   .glass {
     @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-sm dark:bg-slate-900/70 dark:border-slate-800/50;
   }
+
+  /* Hide number input spinners */
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .no-spinner[type=number] {
+    -moz-appearance: textfield;
+  }
 }

@@ -38,6 +38,7 @@ export interface TimeLog {
     endTime?: number;
     isManuallyEdited?: boolean;
     note?: string;
+    duration?: number;
 }
 
 export interface AppState {

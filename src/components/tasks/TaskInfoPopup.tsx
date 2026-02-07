@@ -9,9 +9,21 @@ interface TaskInfoPopupProps {
     isOpen: boolean;
     onClose: () => void;
     position?: { x: number; y: number };
+    isHoverMode?: boolean;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
 }
 
-export const TaskInfoPopup = ({ task, project, isOpen, onClose, position }: TaskInfoPopupProps) => {
+export const TaskInfoPopup = ({
+    task,
+    project,
+    isOpen,
+    onClose,
+    position,
+    isHoverMode = false,
+    onMouseEnter,
+    onMouseLeave
+}: TaskInfoPopupProps) => {
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
 
     useEffect(() => {
@@ -59,18 +71,22 @@ export const TaskInfoPopup = ({ task, project, isOpen, onClose, position }: Task
 
     return (
         <>
-            <div
-                className="fixed inset-0 z-50"
-                onClick={onClose}
-            />
+            {!isHoverMode && (
+                <div
+                    className="fixed inset-0 z-50"
+                    onClick={onClose}
+                />
+            )}
 
             <div
-                className="fixed z-50 bg-white dark:bg-slate-900 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700 w-80"
+                className="fixed z-50 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 w-80 animate-in fade-in zoom-in-95 duration-200"
                 style={{
                     top: `${popupPosition.top}px`,
                     left: `${popupPosition.left}px`
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
             >
                 <div className="flex items-start justify-between p-3 border-b border-slate-100 dark:border-slate-800">
                     <h4 className={cn(

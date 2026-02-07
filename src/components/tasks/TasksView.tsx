@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { TaskInput } from './TaskInput';
 import { TaskItem } from './TaskItem';
+import { CompactTaskItem } from './CompactTaskItem';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskInfoPopup } from './TaskInfoPopup';
 import type { Task, TimeLog, Project, Checkpoint, Priority } from '../../types';
-import { LayoutGrid, List, Plus, CheckCircle2, Clock, CalendarDays, Activity } from 'lucide-react';
+import { LayoutGrid, List, Plus, CheckCircle2, Clock, CalendarDays, Activity, Rows } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Modal } from '../ui/Modal';
 import { STORAGE_KEYS, getFromStorage, saveToStorage } from '../../utils/storage';
@@ -37,16 +38,17 @@ export const TasksView = ({
     deleteLog
 }: TasksViewProps) => {
     const [now, setNow] = useState(Date.now());
-    const [viewMode, setViewMode] = useState<'list' | 'board'>(() =>
+    const [viewMode, setViewMode] = useState<'list' | 'board' | 'compact'>(() =>
         getFromStorage(STORAGE_KEYS.VIEW_MODE, 'list')
     );
 
-    const handleViewChange = (mode: 'list' | 'board') => {
+    const handleViewChange = (mode: 'list' | 'board' | 'compact') => {
         setViewMode(mode);
         saveToStorage(STORAGE_KEYS.VIEW_MODE, mode);
     };
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Ref to hold the close timeout
 
     useEffect(() => {
         if (activeTaskId) {
@@ -155,10 +157,18 @@ export const TasksView = ({
                 logs={logs}
                 tasks={tasks}
                 projects={projects}
-                onTaskClick={handleTimelineTaskClick}
+                onTaskClick={(taskId, position) => {
+                    if (closeTimeoutRef.current) {
+                        clearTimeout(closeTimeoutRef.current);
+                        closeTimeoutRef.current = null;
+                    }
+                    handleTimelineTaskClick(taskId, position);
+                }}
                 onTaskLeave={() => {
-                    setEditingTaskId(null);
-                    setEditingTaskPosition(undefined);
+                    closeTimeoutRef.current = setTimeout(() => {
+                        setEditingTaskId(null);
+                        setEditingTaskPosition(undefined);
+                    }, 200); // 200ms grace period
                 }}
             />
 
@@ -179,6 +189,18 @@ export const TasksView = ({
                                 title="List View"
                             >
                                 <List className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => handleViewChange('compact')}
+                                className={cn(
+                                    "p-1.5 rounded-md transition-all",
+                                    viewMode === 'compact'
+                                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                                        : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                )}
+                                title="Compact View"
+                            >
+                                <Rows className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => handleViewChange('board')}
@@ -278,6 +300,67 @@ export const TasksView = ({
                             </div>
                         )}
                     </div>
+                ) : viewMode === 'compact' ? (
+                    <div className="space-y-0.5 bg-white dark:bg-slate-900/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                        {activeTasks.length === 0 ? (
+                            <div className="text-center py-16 text-slate-400">
+                                <div className="mb-2">✨</div>
+                                <p>All caught up! No active tasks.</p>
+                                <button
+                                    onClick={() => setIsTaskModalOpen(true)}
+                                    className="text-blue-500 hover:underline text-sm mt-2"
+                                >
+                                    Create a new task
+                                </button>
+                            </div>
+                        ) : (
+                            activeTasks.map(task => (
+                                <CompactTaskItem
+                                    key={task.id}
+                                    task={task}
+                                    project={projects.find(p => p.id === task.projectId)}
+                                    isActive={activeTaskId === task.id}
+                                    onToggleStatus={(id) => {
+                                        if (activeTaskId === id) toggleTask(id);
+                                        updateTask(id, { status: 'done', completedAt: Date.now() });
+                                    }}
+                                    onToggleTimer={toggleTask}
+                                    onDelete={deleteTask}
+                                    onUpdate={updateTask}
+                                    logs={logs}
+                                    onUpdateLog={updateLog}
+                                    onDeleteLog={deleteLog}
+                                    projects={projects}
+                                />
+                            ))
+                        )}
+
+                        {completedTasks.length > 0 && (
+                            <div className="bg-slate-50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800">
+                                <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider sticky top-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">
+                                    Completed
+                                </div>
+                                <div>
+                                    {completedTasks.map(task => (
+                                        <CompactTaskItem
+                                            key={task.id}
+                                            task={task}
+                                            project={projects.find(p => p.id === task.projectId)}
+                                            isActive={false}
+                                            onToggleStatus={(id) => updateTask(id, { status: 'todo', completedAt: undefined })}
+                                            onToggleTimer={() => { }}
+                                            onDelete={deleteTask}
+                                            onUpdate={updateTask}
+                                            logs={logs}
+                                            onUpdateLog={updateLog}
+                                            onDeleteLog={deleteLog}
+                                            projects={projects}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <KanbanBoard
                         tasks={tasksWithTime}
@@ -312,9 +395,22 @@ export const TasksView = ({
                         project={project}
                         position={editingTaskPosition}
                         isOpen={true}
+                        isHoverMode={true}
                         onClose={() => {
                             setEditingTaskId(null);
                             setEditingTaskPosition(undefined);
+                        }}
+                        onMouseEnter={() => {
+                            if (closeTimeoutRef.current) {
+                                clearTimeout(closeTimeoutRef.current);
+                                closeTimeoutRef.current = null;
+                            }
+                        }}
+                        onMouseLeave={() => {
+                            closeTimeoutRef.current = setTimeout(() => {
+                                setEditingTaskId(null);
+                                setEditingTaskPosition(undefined);
+                            }, 200);
                         }}
                     />
                 );

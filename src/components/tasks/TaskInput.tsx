@@ -5,7 +5,7 @@ import type { Project, Checkpoint, Priority } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '../../utils/cn';
 import { Select } from '../../components/ui/Select';
-import { DurationInput } from '../ui/DurationInput';
+
 
 interface TaskInputProps {
     onAdd: (title: string, projectId?: string, initialCheckpoints?: Checkpoint[], priority?: Priority, dueDate?: number, notes?: string, estimatedTime?: number) => void;
@@ -22,7 +22,8 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onAdd, projects }) => {
     // New fields
     const [priority, setPriority] = useState<Priority>('medium');
     const [dueDate, setDueDate] = useState<string>(''); // YYYY-MM-DD string for input
-    const [estimatedTime, setEstimatedTime] = useState<number | undefined>();
+    const [estimatedHours, setEstimatedHours] = useState('');
+    const [estimatedMinutes, setEstimatedMinutes] = useState('');
 
     // Helper to format priority options
     const priorityOptions = [
@@ -44,7 +45,7 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onAdd, projects }) => {
                 priority,
                 dateTimestamp,
                 notes,
-                estimatedTime
+                (parseInt(estimatedHours || '0') * 60 * 60 * 1000) + (parseInt(estimatedMinutes || '0') * 60 * 1000) || undefined
             );
 
             // Reset state
@@ -57,7 +58,8 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onAdd, projects }) => {
             setDueDate('');
             setPriority('medium');
             setDueDate('');
-            setEstimatedTime(undefined);
+            setEstimatedHours('');
+            setEstimatedMinutes('');
         }
     };
 
@@ -149,13 +151,31 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onAdd, projects }) => {
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg pr-2">
-                        <DurationInput
-                            value={estimatedTime}
-                            onChange={setEstimatedTime}
-                            className="border-none bg-transparent shadow-none px-2 py-1.5 focus-within:ring-0"
-                            placeholder="Est. Time"
-                        />
+                    <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5">
+                        <div className="relative w-16">
+                            <input
+                                type="number"
+                                min="0"
+                                value={estimatedHours}
+                                onChange={(e) => setEstimatedHours(e.target.value)}
+                                placeholder="0"
+                                className="w-full bg-transparent text-sm focus:outline-none dark:text-slate-200 pr-5 no-spinner"
+                            />
+                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium pointer-events-none">h</span>
+                        </div>
+                        <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                        <div className="relative w-16">
+                            <input
+                                type="number"
+                                min="0"
+                                max="59"
+                                value={estimatedMinutes}
+                                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                                placeholder="0"
+                                className="w-full bg-transparent text-sm focus:outline-none dark:text-slate-200 pr-6 no-spinner"
+                            />
+                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium pointer-events-none">m</span>
+                        </div>
                     </div>
                 </div>
 

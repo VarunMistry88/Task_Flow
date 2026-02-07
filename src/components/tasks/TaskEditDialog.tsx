@@ -3,7 +3,8 @@ import { X, Calendar, Flag, Folder, ListTodo, Plus, StickyNote, Save } from 'luc
 import type { Task, Project, Priority, Checkpoint } from '../../types';
 import { cn } from '../../utils/cn';
 import { Select } from '../ui/Select';
-import { DurationInput } from '../ui/DurationInput';
+
+
 import { v4 as uuidv4 } from 'uuid';
 
 interface TaskEditDialogProps {
@@ -25,7 +26,8 @@ export const TaskEditDialog = ({ task, projects, isOpen, onClose, onUpdate }: Ta
     const [notes, setNotes] = useState(task.notes || '');
 
     // Time Estimate
-    const [estimatedTime, setEstimatedTime] = useState<number | undefined>(task.estimatedTime);
+    const [estimatedHours, setEstimatedHours] = useState('');
+    const [estimatedMinutes, setEstimatedMinutes] = useState('');
 
     // Reset state ONLY when dialog OPENS, not when task updates during edit (prevents reset on timer tick)
     useEffect(() => {
@@ -37,7 +39,15 @@ export const TaskEditDialog = ({ task, projects, isOpen, onClose, onUpdate }: Ta
             setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
             setCheckpoints(task.checkpoints || []);
             setNotes(task.notes || '');
-            setEstimatedTime(task.estimatedTime);
+
+            if (task.estimatedTime) {
+                const totalMinutes = Math.floor(task.estimatedTime / (1000 * 60));
+                setEstimatedHours(Math.floor(totalMinutes / 60).toString());
+                setEstimatedMinutes((totalMinutes % 60).toString());
+            } else {
+                setEstimatedHours('');
+                setEstimatedMinutes('');
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
@@ -57,7 +67,7 @@ export const TaskEditDialog = ({ task, projects, isOpen, onClose, onUpdate }: Ta
             dueDate: dateTimestamp,
             checkpoints,
             notes,
-            estimatedTime
+            estimatedTime: (parseInt(estimatedHours || '0') * 60 * 60 * 1000) + (parseInt(estimatedMinutes || '0') * 60 * 1000) || undefined
         });
         onClose();
     };
@@ -106,8 +116,11 @@ export const TaskEditDialog = ({ task, projects, isOpen, onClose, onUpdate }: Ta
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+            <div
+                className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Edit Task</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
@@ -176,11 +189,31 @@ export const TaskEditDialog = ({ task, projects, isOpen, onClose, onUpdate }: Ta
 
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Estimated Time</label>
-                                <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Estimated Time</label>
-                                <DurationInput
-                                    value={estimatedTime}
-                                    onChange={setEstimatedTime}
-                                />
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={estimatedHours}
+                                            onChange={(e) => setEstimatedHours(e.target.value)}
+                                            placeholder="0"
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-slate-100 pr-8 no-spinner"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 pointer-events-none">hr</span>
+                                    </div>
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="59"
+                                            value={estimatedMinutes}
+                                            onChange={(e) => setEstimatedMinutes(e.target.value)}
+                                            placeholder="0"
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-slate-100 pr-9 no-spinner"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 pointer-events-none">min</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
