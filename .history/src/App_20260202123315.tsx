@@ -4,13 +4,15 @@ import { TasksView } from './components/tasks/TasksView';
 import { NotepadView } from './components/tasks/NotepadView';
 import { StatsView } from './components/stats/StatsView';
 import { ProjectsView } from './components/projects/ProjectsView';
+
+
+import { useAuth } from './context/AuthContext';
 import { useData } from './context/DataContext';
-// import { useAuth } from './context/AuthContext';
-// import { AuthScreen } from './components/auth/AuthScreen';
-// import { Loader2 } from 'lucide-react';
+import { AuthScreen } from './components/auth/AuthScreen';
+import { Loader2 } from 'lucide-react';
 
 function AppContent() {
-  // const { user, loading } = useAuth();
+  const { user, loading } = useAuth();
   const {
     tasks,
     projects,
@@ -27,18 +29,17 @@ function AppContent() {
   } = useData();
   const [currentView, setCurrentView] = useState<'tasks' | 'stats' | 'projects' | 'notepad'>('tasks');
 
-  // Removed authentication check - always show app in offline mode
-  // if (loading) {
-  //   return (
-  //     <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-  //       <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
-  // if (!user) {
-  //   return <AuthScreen />;
-  // }
+  if (!user) {
+    return <AuthScreen />;
+  }
 
   return (
     <Layout currentView={currentView} onNavigate={setCurrentView}>

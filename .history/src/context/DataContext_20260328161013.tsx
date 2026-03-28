@@ -200,77 +200,82 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateTask = async (id: string, updates: Partial<Task>) => {
-        // Offline-only mode - update task locally
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+        if (!isLocalOnly && user) {
+            const dbUpdates: any = {};
+            if (updates.title !== undefined) dbUpdates.title = updates.title;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
+            if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+            if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId;
+            if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate ? new Date(updates.dueDate).toISOString() : null;
+            if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+            if (updates.estimatedTime !== undefined) dbUpdates.estimated_time = updates.estimatedTime;
+            if (updates.checkpoints !== undefined) dbUpdates.checkpoints = updates.checkpoints;
 
-        // Supabase task update code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     const dbUpdates: any = {};
-        //     if (updates.title !== undefined) dbUpdates.title = updates.title;
-        //     if (updates.status !== undefined) dbUpdates.status = updates.status;
-        //     if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
-        //     if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId;
-        //     if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate ? new Date(updates.dueDate).toISOString() : null;
-        //     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-        //     if (updates.estimatedTime !== undefined) dbUpdates.estimated_time = updates.estimatedTime;
-        //     if (updates.checkpoints !== undefined) dbUpdates.checkpoints = updates.checkpoints;
-        //     await supabase.from('tasks').update(dbUpdates).eq('id', id);
-        // }
+            await supabase.from('tasks').update(dbUpdates).eq('id', id);
+        }
+
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     };
 
     const deleteTask = async (id: string) => {
-        // Offline-only mode - delete task locally
+        if (!isLocalOnly && user) {
+            await supabase.from('tasks').delete().eq('id', id);
+        }
         setTasks(prev => prev.filter(t => t.id !== id));
-
-        // Supabase task deletion code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     await supabase.from('tasks').delete().eq('id', id);
-        // }
     };
 
     const addProject = async (name: string, color: string = '#3b82f6') => {
-        // Offline-only mode - create project locally
-        setProjects(prev => [...prev, { id: crypto.randomUUID(), name, color }]);
+        if (!isLocalOnly && user) {
+            const { data, error } = await supabase.from('projects').insert({
+                user_id: user.id,
+                name,
+                color
+            }).select().single();
 
-        // Supabase project creation code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     const { data, error } = await supabase.from('projects').insert({
-        //         user_id: user.id,
-        //         name,
-        //         color
-        //     }).select().single();
-        //
-        //     if (!error && data) {
-        //         setProjects(prev => [...prev, { id: data.id, name: data.name, color: data.color }]);
-        //         return;
-        //     }
-        // }
+            if (!error && data) {
+                setProjects(prev => [...prev, { id: data.id, name: data.name, color: data.color }]);
+                return;
+            }
+        }
+
+        setProjects(prev => [...prev, { id: crypto.randomUUID(), name, color }]);
     };
 
     const deleteProject = async (id: string) => {
-        // Offline-only mode - delete project locally
+        if (!isLocalOnly && user) {
+            await supabase.from('projects').delete().eq('id', id);
+        }
         setProjects(prev => prev.filter(p => p.id !== id));
         setTasks(prev => prev.map(t => t.projectId === id ? { ...t, projectId: undefined } : t));
-
-        // Supabase project deletion code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     await supabase.from('projects').delete().eq('id', id);
-        // }
     };
 
     const toggleTask = async (taskId: string) => {
-        const newLogId = crypto.randomUUID();
+        let newLogId = crypto.randomUUID();
 
         // Stop current active task if any
         if (activeTaskId) {
             const activeLog = logs.find(l => l.taskId === activeTaskId && !l.endTime);
             if (activeLog) {
+                if (!isLocalOnly && user) {
+                    await supabase.from('time_logs')
+                        .update({ end_time: new Date().toISOString(), duration: Date.now() - activeLog.startTime })
+                        .eq('id', activeLog.id);
+                }
                 setLogs(prev => prev.map(l => l.id === activeLog.id ? { ...l, endTime: Date.now(), duration: Date.now() - l.startTime } : l));
             }
         }
 
         // If clicking a different task, start it
         if (activeTaskId !== taskId) {
+            if (!isLocalOnly && user) {
+                const { data, error } = await supabase.from('time_logs').insert({
+                    user_id: user.id,
+                    task_id: taskId,
+                    start_time: new Date().toISOString()
+                }).select().single();
+                if (!error && data) newLogId = data.id;
+            }
+
             const newLog: TimeLog = {
                 id: newLogId,
                 taskId: taskId,
@@ -280,26 +285,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             };
             setLogs(prev => [...prev, newLog]);
         }
-
-        // Supabase time tracking code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     if (activeTaskId) {
-        //         const activeLog = logs.find(l => l.taskId === activeTaskId && !l.endTime);
-        //         if (activeLog) {
-        //             await supabase.from('time_logs')
-        //                 .update({ end_time: new Date().toISOString(), duration: Date.now() - activeLog.startTime })
-        //                 .eq('id', activeLog.id);
-        //         }
-        //     }
-        //     if (activeTaskId !== taskId) {
-        //         const { data, error } = await supabase.from('time_logs').insert({
-        //             user_id: user.id,
-        //             task_id: taskId,
-        //             start_time: new Date().toISOString()
-        //         }).select().single();
-        //         if (!error && data) newLogId = data.id;
-        //     }
-        // }
     };
 
     const updateLog = async (_logId: string, _updates: Partial<TimeLog>) => {
@@ -308,13 +293,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteLog = async (logId: string) => {
-        // Offline-only mode - delete log locally
+        if (!isLocalOnly && user) {
+            await supabase.from('time_logs').delete().eq('id', logId);
+        }
         setLogs(prev => prev.filter(l => l.id !== logId));
-
-        // Supabase log deletion code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     await supabase.from('time_logs').delete().eq('id', logId);
-        // }
     };
 
     // Live Timer Effect

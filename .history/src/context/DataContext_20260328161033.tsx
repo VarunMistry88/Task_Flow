@@ -308,13 +308,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteLog = async (logId: string) => {
-        // Offline-only mode - delete log locally
+        if (!isLocalOnly && user) {
+            await supabase.from('time_logs').delete().eq('id', logId);
+        }
         setLogs(prev => prev.filter(l => l.id !== logId));
-
-        // Supabase log deletion code commented out for offline-only mode
-        // if (!isLocalOnly && user) {
-        //     await supabase.from('time_logs').delete().eq('id', logId);
-        // }
     };
 
     // Live Timer Effect
