@@ -23,10 +23,13 @@ export const Layout = ({ children, currentView = 'tasks', onNavigate }: LayoutPr
         <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 flex transition-colors duration-300">
             {/* Sidebar */}
             <aside className={cn(
-                "border-r border-slate-200 dark:border-slate-800 bg-white dark:!bg-slate-900 p-6 hidden md:flex flex-col transition-all duration-300 relative overflow-hidden",
-                isCollapsed ? "w-20" : "w-64"
+                "border-r border-slate-200 dark:border-slate-800 bg-white dark:!bg-slate-900 hidden md:flex flex-col transition-all duration-300 relative overflow-hidden",
+                isCollapsed ? "w-20 p-4" : "w-64 p-6"
             )}>
-                <div className="flex items-center gap-3 mb-8">
+                <div className={cn(
+                    "flex flex-col gap-4 mb-8",
+                    !isCollapsed && "flex-row items-center gap-3"
+                )}>
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
                         <Zap className="w-6 h-6 text-white" fill="currentColor" />
                     </div>
@@ -37,9 +40,14 @@ export const Layout = ({ children, currentView = 'tasks', onNavigate }: LayoutPr
                     )}
                     <button
                         onClick={toggleSidebar}
-                        className="ml-auto p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors flex-shrink-0"
+                        className={cn(
+                            "p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors flex-shrink-0",
+                            !isCollapsed && "ml-auto",
+                            isCollapsed && "mx-auto"
+                        )}
+                        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
-                        {isCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                        {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-4 h-4" />}
                     </button>
                 </div>
 

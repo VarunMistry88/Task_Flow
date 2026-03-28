@@ -9,10 +9,29 @@ interface NotepadTaskItemProps {
     onDelete: (id: string) => void;
 }
 
-export const NotepadTaskItem = ({ task, onUpdate }: NotepadTaskItemProps) => {
+export const NotepadTaskItem = ({ task, onUpdate, onDelete }: NotepadTaskItemProps) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isAddingSubtask, setIsAddingSubtask] = useState(false);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Move focus to subtask input or next task
+            setIsAddingSubtask(true);
+        } else if (e.key === 'Backspace' && !task.title) {
+            e.preventDefault();
+            onDelete(task.id);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextElement = e.currentTarget.parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+            (nextElement as HTMLInputElement)?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevElement = e.currentTarget.parentElement?.parentElement?.previousElementSibling?.querySelector('input');
+            (prevElement as HTMLInputElement)?.focus();
+        }
+    };
 
     const handleAddSubtask = (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -62,19 +81,36 @@ export const NotepadTaskItem = ({ task, onUpdate }: NotepadTaskItemProps) => {
                     <Circle className="w-4 h-4" />
                 </button>
 
-                <span className="text-sm text-slate-700 dark:text-slate-200 flex-1 truncate">
-                    {task.title}
-                </span>
+                <input
+                    type="text"
+                    value={task.title}
+                    onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+                    onKeyDown={handleKeyDown}
+                    className="text-sm bg-transparent border-none focus:ring-0 p-0 text-slate-700 dark:text-slate-200 flex-1 min-w-0"
+                    placeholder="Task title..."
+                />
 
-                {isHovered && !isAddingSubtask && (
+                <div className="flex items-center gap-1">
+                    {isHovered && !isAddingSubtask && (
+                        <button
+                            onClick={() => setIsAddingSubtask(true)}
+                            className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-all animate-in fade-in zoom-in duration-200"
+                            title="Add subtask"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                     <button
-                        onClick={() => setIsAddingSubtask(true)}
-                        className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-all animate-in fade-in zoom-in duration-200"
-                        title="Add subtask"
+                        onClick={() => onDelete(task.id)}
+                        className={cn(
+                            "p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-all opacity-0 group-hover/row:opacity-100",
+                            isAddingSubtask && "hidden"
+                        )}
+                        title="Delete task"
                     >
-                        <Plus className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5" />
                     </button>
-                )}
+                </div>
             </div>
 
             {/* Subtasks */}
@@ -113,6 +149,9 @@ export const NotepadTaskItem = ({ task, onUpdate }: NotepadTaskItemProps) => {
                             value={newSubtaskTitle}
                             onChange={(e) => setNewSubtaskTitle(e.target.value)}
                             onBlur={() => !newSubtaskTitle && setIsAddingSubtask(false)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') setIsAddingSubtask(false);
+                            }}
                             placeholder="Add subtask..."
                             className="w-full bg-transparent border-none focus:ring-0 text-xs text-slate-600 dark:text-slate-400 placeholder:text-slate-400 py-0 px-0"
                         />
