@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Check active sessions and sets the user
-        supabase.auth.getSession().then(({ data: { session }, error }: any) => {
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
             if (error) {
                 console.warn("Supabase connection failed, enabling offline mode:", error);
                 setIsOfflineMode(true);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setUser(session?.user ?? null);
             }
             setLoading(false);
-        }).catch((error: any) => {
+        }).catch((error) => {
             console.warn("Supabase connection failed, enabling offline mode:", error);
             setIsOfflineMode(true);
             setUser({ id: 'offline-user', email: 'offline@local' } as User);
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
 
         // Listen for changes on auth state (logged in, signed out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!isOfflineMode) {
                 setSession(session);
                 setUser(session?.user ?? null);

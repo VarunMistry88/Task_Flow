@@ -91,13 +91,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                     totalTimeSpent: 0
                 }));
 
-                const loadedProjects: Project[] = projectsData.data.map((p: any) => ({
+                const loadedProjects: Project[] = projectsData.data.map(p => ({
                     id: p.id,
                     name: p.name,
                     color: p.color
                 }));
 
-                const loadedLogs: TimeLog[] = logsData.data.map((l: any) => ({
+                const loadedLogs: TimeLog[] = logsData.data.map(l => ({
                     id: l.id,
                     taskId: l.task_id,
                     startTime: new Date(l.start_time).getTime(),

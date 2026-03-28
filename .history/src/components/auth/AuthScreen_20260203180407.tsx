@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Loader2, WifiOff } from 'lucide-react';
+import { Loader2, Wifi, WifiOff } from 'lucide-react';
 
 export const AuthScreen = () => {
     const { signInOffline } = useAuth();
